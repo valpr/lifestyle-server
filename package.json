@@ -1,0 +1,27 @@
+{
+  "name": "lifestyleserver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "tsc": "tsc",
+    "dev": "ts-node-dev index.ts",
+    "lint": "eslint --ext .ts ."
+  },
+  "author": "Andrew Fong",
+  "license": "MIT",
+  "dependencies": {
+    "apollo-server": "^2.12.0",
+    "express": "^4.17.1",
+    "graphql": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.6",
+    "@typescript-eslint/eslint-plugin": "^2.29.0",
+    "@typescript-eslint/parser": "^2.29.0",
+    "eslint": "^6.8.0",
+    "ts-node-dev": "^1.0.0-pre.44",
+    "tsc": "^1.20150623.0",
+    "typescript": "^3.8.3"
+  }
+}
