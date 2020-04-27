@@ -1,7 +1,23 @@
 import { ApolloServer } from 'apollo-server'
 import gql from 'graphql-tag'
+import mongoose from 'mongoose'
+import config from './utils/config'
 
-let users = [
+mongoose.set('useFindAndModify', false)
+mongoose.set('useUnifiedTopology', true)
+mongoose.set('useCreateIndex', true)
+
+
+mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true })
+  .then(() => {
+    console.log('connected to MongoDB')
+  })
+  .catch((error) => {
+    console.log('error connection to MongoDB:', error.message)
+  })
+
+  //TODO remove data from here
+const users = [
     {
         username: "mlewis",
         name: "Mike Lewis",
