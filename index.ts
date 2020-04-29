@@ -1,4 +1,4 @@
-import { ApolloServer, UserInputError } from 'apollo-server'
+import { ApolloServer, UserInputError, IResolvers } from 'apollo-server'
 import gql from 'graphql-tag'
 import mongoose from 'mongoose'
 import config from './utils/config'
@@ -17,8 +17,6 @@ mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true })
   .catch((error) => {
     console.log('error connection to MongoDB:', error.message)
   })
-
-  //TODO remove data from here
 
 
 const typeDefs = gql`
@@ -55,13 +53,13 @@ const typeDefs = gql`
     }
 `
 
-const resolvers = {
+const resolvers: IResolvers = {
     Query: {
         allUsers: () => User.find({}),
         userCount: () => User.collection.countDocuments(),
     },
     Mutation: {
-        AddUser: async (_root: never, args: { name: string; username: string }) => {
+        AddUser: async (_root: unknown, args: { name: string; username: string }) => {
             const user = new User({name: args.name, username: args.username, entries:[]})
             try {
                 const response = await user.save()
@@ -73,7 +71,7 @@ const resolvers = {
                 })
             }
         },
-        AddEntry: async (_root: never, args: {description: string; date: string; time: number; calories: number}) => {
+        AddEntry: async (_root: unknown, args: {description: string; date: string; time: number; calories: number}) => {
             const entry = new Entry({description: args.description, date: args.date, time: args.time, calories: args.calories})
             try {
                 const response = await entry.save()
