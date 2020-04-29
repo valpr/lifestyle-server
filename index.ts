@@ -1,14 +1,19 @@
-import { ApolloServer, UserInputError, IResolvers } from 'apollo-server'
+import { AuthenticationError, ApolloServer, UserInputError, IResolvers } from 'apollo-server'
 import gql from 'graphql-tag'
+import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
 import config from './utils/config'
 import User from './models/user'
 import Entry from './models/entry'
+import bcrypt from 'bcrypt'
 
 mongoose.set('useFindAndModify', false)
 mongoose.set('useUnifiedTopology', true)
 mongoose.set('useCreateIndex', true)
-
+//NEXT IMPLEMENT LOGIN
+//first step users get added with passwordHash
+//next step login returns token that user can use
+//other methods must use token to authenticate
 
 mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true })
   .then(() => {
@@ -20,6 +25,10 @@ mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true })
 
 
 const typeDefs = gql`
+  type Token {
+      value: String!
+  }
+
     type User {
         name: String!
         username: String!
@@ -43,6 +52,7 @@ const typeDefs = gql`
         AddUser (
             name: String!
             username: String!
+            password: String!
         ): User
         AddEntry (
             description: String!
@@ -50,6 +60,10 @@ const typeDefs = gql`
             time: Int!
             calories: Int!
         ): Entry
+        Login(
+            username:String!
+            password:String!
+        ): Token
     }
 `
 
@@ -59,8 +73,28 @@ const resolvers: IResolvers = {
         userCount: () => User.collection.countDocuments(),
     },
     Mutation: {
-        AddUser: async (_root: unknown, args: { name: string; username: string }) => {
-            const user = new User({name: args.name, username: args.username, entries:[]})
+        Login: async(_root, args) => {
+            const user = await User.findOne({username: args.username})
+            
+            const passwordCorrect = user === null ? false: await bcrypt.compare(args.password, user.passwordHash)
+            console.log(passwordCorrect)
+            if (!(user && passwordCorrect)){
+                throw new AuthenticationError("Invalid Password or User")
+            }
+            else{
+                const userToken = {
+                    username: user.username,
+                    id: user._id
+                }
+            }
+
+        
+        },
+        AddUser: async (_root: unknown, args: { name: string; username: string; password: string }) => {
+            //once authentication is done, 
+            const saltRounds = 10
+            const passwordHash = await bcrypt.hash(args.password, saltRounds)
+            const user = new User({name: args.name, username: args.username, passwordHash: passwordHash, entries:[]})
             try {
                 const response = await user.save()
                 return response
@@ -88,7 +122,16 @@ const resolvers: IResolvers = {
 
 const server = new ApolloServer({
     typeDefs, 
-    resolvers
+    resolvers, 
+    context: async ({req}) => {
+        const auth = req ? req.headers.authorization : null
+        if (auth && auth.toLowerCase().startsWith('bearer ')){
+            const decodedToken = jwt.verify(auth.substring(7), config.JWT_SECRET)
+            const currentUser = await User.findById(decodedToken.id)
+            return {currentUser}
+        }
+        return null
+    }
 })
 
 
