@@ -1,7 +1,9 @@
-import { ApolloServer } from 'apollo-server'
+import { ApolloServer, UserInputError } from 'apollo-server'
 import gql from 'graphql-tag'
 import mongoose from 'mongoose'
 import config from './utils/config'
+import User from './models/user'
+import Entry from './models/entry'
 
 mongoose.set('useFindAndModify', false)
 mongoose.set('useUnifiedTopology', true)
@@ -17,48 +19,7 @@ mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true })
   })
 
   //TODO remove data from here
-const users = [
-    {
-        username: "mlewis",
-        name: "Mike Lewis",
-        entries: [
-            {
-                id: 1,
-                foodDescription:"Hash Browns",
-                date: "2020-04-26",
-                time: "2:00 PM",
-                calories: 500,
-            },
-            {
-                id: 2,
-                foodDescription:"Roast Beef",
-                date: "2020-04-26",
-                time: "6:00 PM",
-                calories: 1000,
-            }
-        ]
-    },
-    {
-        username: "klou",
-        name: "Karen Lou",
-        entries: [
-            {
-                id: 1,
-                foodDescription:"Ice Cream",
-                date: "2020-04-26",
-                time: "1:00 PM",
-                calories: 200,
-            },
-            {
-                id: 2,
-                foodDescription:"Turkey Sandwich",
-                date: "2020-04-26",
-                time: "5:00 PM",
-                calories: 500,
-            }
-        ]
-    }
-]
+
 
 const typeDefs = gql`
     type User {
@@ -79,12 +40,51 @@ const typeDefs = gql`
         findUser: User!
         userCount: Int!
     }
+
+    type Mutation {
+        AddUser (
+            name: String!
+            username: String!
+        ): User
+        AddEntry (
+            description: String!
+            date: String!
+            time: Int!
+            calories: Int!
+        ): Entry
+    }
 `
 
 const resolvers = {
     Query: {
-        allUsers: () => users,
-        userCount: () => users.length,
+        allUsers: () => User.find({}),
+        userCount: () => User.collection.countDocuments(),
+    },
+    Mutation: {
+        AddUser: async (_root: never, args: { name: string; username: string }) => {
+            const user = new User({name: args.name, username: args.username, entries:[]})
+            try {
+                const response = await user.save()
+                return response
+            }
+            catch (error) {
+                throw new UserInputError(error.message, {
+                    invalidArgs: args,
+                })
+            }
+        },
+        AddEntry: async (_root: never, args: {description: string; date: string; time: number; calories: number}) => {
+            const entry = new Entry({description: args.description, date: args.date, time: args.time, calories: args.calories})
+            try {
+                const response = await entry.save()
+                return response
+            }
+            catch (error) {
+                throw new UserInputError(error.message, {
+                    invalidArgs: args
+                })
+            }
+        }
     }
 }
 
