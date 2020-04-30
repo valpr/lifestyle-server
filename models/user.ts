@@ -20,7 +20,7 @@ const UserSchema = new Schema({
       type: String,
       required: true
     },
-    entry: [{
+    entries: [{
       type: Schema.Types.ObjectId,
       ref: "Entry",
       required: true
@@ -67,12 +67,12 @@ const UserSchema = new Schema({
       entries: [IEntry];
   }
 
-  UserSchema.statics.findAnEntry =  function(id: string) {
+  UserSchema.statics.findMyEntries =  function(id: string) {
       return this.findById(id).populate("Entry").exec()
   }
 
   export interface IUserModel extends Model<IUser> {
-      findMyCompany(id: string): Promise<IUserPopulated>;
+      findMyEntries(id: string): Promise<IUserPopulated>;
   }
 
   UserSchema.pre<IUser>("save", async function(_next){

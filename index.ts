@@ -1,4 +1,4 @@
-import { ApolloServer, UserInputError, IResolvers } from 'apollo-server'
+import { ApolloServer, UserInputError, IResolvers, AuthenticationError } from 'apollo-server'
 import gql from 'graphql-tag'
 import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
@@ -6,6 +6,7 @@ import config from './utils/config'
 import User from './models/user'
 import Entry from './models/entry'
 import { Token } from './types'
+import bcrypt from 'bcrypt'
 
 mongoose.set('useFindAndModify', false)
 mongoose.set('useUnifiedTopology', true)
@@ -38,7 +39,7 @@ const typeDefs = gql`
     }
 
     type Entry {
-        foodDescription: String!
+        description: String!
         date: String!
         time: String!
         calories: Int!
@@ -77,21 +78,39 @@ const resolvers: IResolvers = {
         userCount: () => User.collection.countDocuments(),
     },
     Mutation: {
-        Login: (_root, _args) => {
-            return null //TODO
+        Login: async (_root, args: {
+            username: string; password: string;
+        }) => {
+            console.log(args)
+            const foundUser = await User.findOne({username: args.username})
+            if (foundUser){
+                const passwordCorrect = await bcrypt.compare(args.password, foundUser.password)
+                if (passwordCorrect){
+                    const tokenPreSign = {
+                        username: foundUser.username,
+                        id: foundUser.id,
+                    }
+                    const token = jwt.sign(tokenPreSign, config.JWT_SECRET)
+                    return {value: token}
+                }
+            }
+            throw new AuthenticationError(
+                'Incorrect username or password'
+            )
         },
         AddUser: async (_root: unknown, 
             args: {gender: string; firstname: string; lastname: string; username: string; password: string }) => {
+            
 
-            const user = new User(
-                {firstname: args.firstname,
-                    lastname: args.lastname, 
-                    username: args.username, 
-                    password: args.password, 
-                    entries:[],
-                    gender: args.gender
-                })
             try {
+                const user = new User(
+                    {firstname: args.firstname,
+                        lastname: args.lastname, 
+                        username: args.username, 
+                        password: args.password, 
+                        entries:[],
+                        gender: args.gender
+                    })
                 const response = await user.save()
                 return response
             }
@@ -102,8 +121,13 @@ const resolvers: IResolvers = {
             }
         },
         AddEntry: async (_root: unknown, args: {description: string; date: string; time: number; calories: number}) => {
-            const entry = new Entry({description: args.description, date: args.date, time: args.time, calories: args.calories})
+
             try {
+                const entry = new Entry(
+                    {description: args.description, 
+                        date: args.date, 
+                        time: args.time, 
+                        calories: args.calories})
                 const response = await entry.save()
                 return response
             }
