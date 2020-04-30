@@ -11,10 +11,7 @@ import bcrypt from 'bcrypt'
 mongoose.set('useFindAndModify', false)
 mongoose.set('useUnifiedTopology', true)
 mongoose.set('useCreateIndex', true)
-//NEXT IMPLEMENT LOGIN
-//first step users get added with passwordHash
-//next step login returns token that user can use
-//other methods must use token to authenticate
+//implement addEntries with user
 
 mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true })
   .then(() => {
@@ -81,7 +78,6 @@ const resolvers: IResolvers = {
         Login: async (_root, args: {
             username: string; password: string;
         }) => {
-            console.log(args)
             const foundUser = await User.findOne({username: args.username})
             if (foundUser){
                 const passwordCorrect = await bcrypt.compare(args.password, foundUser.password)
@@ -120,8 +116,13 @@ const resolvers: IResolvers = {
                 })
             }
         },
-        AddEntry: async (_root: unknown, args: {description: string; date: string; time: number; calories: number}) => {
-
+        AddEntry: async (_root: unknown, args: {description: string; date: string; time: number; calories: number}, {currentUser}) => {
+            console.log(currentUser)
+            if (!currentUser){
+                throw new AuthenticationError(
+                    'Please login to add entries'
+                )
+            }
             try {
                 const entry = new Entry(
                     {description: args.description, 
@@ -147,7 +148,6 @@ const server = new ApolloServer({
         const auth = req ? req.headers.authorization : null
         if (auth && auth.toLowerCase().startsWith('bearer ')){
             const decodedToken = jwt.verify(auth.substring(7), config.JWT_SECRET) as Token
-            console.log(decodedToken)
             const currentUser = await User.findById(decodedToken.id)
             return {currentUser}
         }
