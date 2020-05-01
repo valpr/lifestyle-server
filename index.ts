@@ -3,7 +3,7 @@ import gql from 'graphql-tag'
 import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
 import config from './utils/config'
-import User from './models/user'
+import User, {IUserModel, IUser} from './models/user'
 import Entry from './models/entry'
 import { Token } from './types'
 import bcrypt from 'bcrypt'
@@ -11,7 +11,6 @@ import bcrypt from 'bcrypt'
 mongoose.set('useFindAndModify', false)
 mongoose.set('useUnifiedTopology', true)
 mongoose.set('useCreateIndex', true)
-//implement addEntries with user
 
 mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true })
   .then(() => {
@@ -116,21 +115,37 @@ const resolvers: IResolvers = {
                 })
             }
         },
-        AddEntry: async (_root: unknown, args: {description: string; date: string; time: number; calories: number}, {currentUser}) => {
-            console.log(currentUser)
+        AddEntry: async (_root: unknown, 
+            args: {description: string; date: string; time: number; calories: number}, 
+            {currentUser}: {currentUser: IUser}) => {
+            console.log(currentUser, typeof currentUser)
             if (!currentUser){
                 throw new AuthenticationError(
                     'Please login to add entries'
                 )
             }
+            
             try {
+                const userToChange = await User.findOne({_id: currentUser.id})
+                if (userToChange){
                 const entry = new Entry(
                     {description: args.description, 
                         date: args.date, 
                         time: args.time, 
-                        calories: args.calories})
+                        calories: args.calories,
+                        user: userToChange._id
+                    })
+                
+                //add entry to user
+                
                 const response = await entry.save()
+                userToChange.entries.push(response.id)
+                await userToChange.save()
                 return response
+                }
+                else{
+                    throw new Error('User not found')
+                }
             }
             catch (error) {
                 throw new UserInputError(error.message, {

@@ -60,7 +60,7 @@ const UserSchema = new Schema({
   }
 
   export interface IUser extends IUserBase { //when you want the IDs
-       entries: [IEntry["_id"]];
+       entries: Array<IEntry["_id"]>;
   }
 
   export interface IUserPopulated extends IUserBase {
@@ -72,6 +72,8 @@ const UserSchema = new Schema({
   }
 
   export interface IUserModel extends Model<IUser> {
+    _id: string;
+
       findMyEntries(id: string): Promise<IUserPopulated>;
   }
 
