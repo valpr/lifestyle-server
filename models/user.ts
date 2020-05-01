@@ -68,7 +68,7 @@ const UserSchema = new Schema({
   }
 
   UserSchema.statics.findMyEntries =  function(id: string) {
-      return this.findById(id).populate("Entry").exec()
+      return this.findById(id).populate("entries").exec()
   }
 
   export interface IUserModel extends Model<IUser> {

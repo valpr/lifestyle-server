@@ -54,7 +54,7 @@ export interface IEntryBase extends IEntrySchema {
 } 
 
 export interface IEntry extends IEntryBase {
-    user: IUser["_id"]
+    user: IUser["_id"];
 }
 
 export interface IEntryPopulated extends IEntryBase {

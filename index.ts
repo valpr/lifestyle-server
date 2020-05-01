@@ -3,7 +3,7 @@ import gql from 'graphql-tag'
 import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
 import config from './utils/config'
-import User, {IUserModel, IUser} from './models/user'
+import User, { IUser } from './models/user'
 import Entry from './models/entry'
 import { Token } from './types'
 import bcrypt from 'bcrypt'
@@ -30,7 +30,7 @@ const typeDefs = gql`
         firstname: String!
         lastname: String!
         username: String!
-        entries: [Entry]!
+        entries: [String]!
         gender: String!
     }
 
@@ -45,6 +45,7 @@ const typeDefs = gql`
         allUsers: [User!]!
         findUser: User!
         userCount: Int!
+        myEntries: [Entry]!
     }
 
     type Mutation {
@@ -70,8 +71,21 @@ const typeDefs = gql`
 
 const resolvers: IResolvers = {
     Query: {
-        allUsers: () => User.find({}),
+        allUsers: async () =>  {
+            return await User.find({})
+        },
         userCount: () => User.collection.countDocuments(),
+        myEntries: async (_root, _args, {currentUser}: {currentUser: IUser}) => {
+            if (!currentUser){
+                throw new AuthenticationError(
+                    'Please login to view your entries'
+                )
+            }
+            else{
+                const testUser = await User.findMyEntries( currentUser.id)
+                return testUser.entries
+            }
+        } 
     },
     Mutation: {
         Login: async (_root, args: {
@@ -118,7 +132,6 @@ const resolvers: IResolvers = {
         AddEntry: async (_root: unknown, 
             args: {description: string; date: string; time: number; calories: number}, 
             {currentUser}: {currentUser: IUser}) => {
-            console.log(currentUser, typeof currentUser)
             if (!currentUser){
                 throw new AuthenticationError(
                     'Please login to add entries'
@@ -135,8 +148,6 @@ const resolvers: IResolvers = {
                         calories: args.calories,
                         user: userToChange._id
                     })
-                
-                //add entry to user
                 
                 const response = await entry.save()
                 userToChange.entries.push(response.id)
