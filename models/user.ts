@@ -30,8 +30,56 @@ const UserSchema = new Schema({
       enum: [0, 1],
       default: 0,
       required: true
+    },
+    height: {
+      type: Number,
+      default: 0,
+      required: true
+    },
+    weights: [
+      {
+        weight: {
+          type: Number,
+          required: true
+        },
+        date: {
+          type: Date,
+          required: true
+        }
+      }
+    ],
+    objective: {
+      type: Number,
+      enum: [0.8, 1.0, 1.3],
+      default: 0,
+      required: true
+    },
+    effort: {
+      type: Number,
+      enum: [1.2, 1.4, 1.5, 1.7, 1.8],
+      default: 0,
+      required: true
     }
   })
+
+  enum Objective {
+    Gain = 1.3,
+    Neutral = 1.0,
+    Loss = 0.8
+  }
+  
+  interface WeightEntry {
+    weight: number;
+    date: Date;
+  }
+
+  enum Effort {
+    Sedentary = 1.2,
+    Light = 1.4,
+    Moderate = 1.5,
+    Heavy = 1.7,
+    Extreme = 1.8
+  }
 
   enum Gender {
       Male = 1,
@@ -43,6 +91,10 @@ const UserSchema = new Schema({
       lastname?: string;
       username: string;
       password: string;
+      height: number;
+      objective: Objective;
+      effort: Effort;
+      weight: WeightEntry;
       gender: Gender;
   }
 

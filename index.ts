@@ -32,11 +32,20 @@ const typeDefs = gql`
         username: String!
         entries: [String]!
         gender: String!
+        height: Float!
+        weights: [WeightEntry]!
+        effort: Float!
+        objective: Float!
+    }
+
+    type WeightEntry{
+        date: Float!
+        weight: Float!
     }
 
     type Entry {
         description: String!
-        date: String!
+        date: Float!
         time: String!
         calories: Int!
     }
@@ -54,6 +63,10 @@ const typeDefs = gql`
             lastname: String!
             username: String!
             password: String!
+            objective: Int!
+            height: Float!
+            weight: Float!
+            effort: Float!
             gender: Int!
         ): User
         AddEntry (
@@ -108,9 +121,9 @@ const resolvers: IResolvers = {
             )
         },
         AddUser: async (_root: unknown, 
-            args: {gender: string; firstname: string; lastname: string; username: string; password: string }) => {
+            args: {gender: string; firstname: string; lastname: string; username: string; password: string; effort: number; height: number; weight: number; objective: number  }) => {
             
-
+            const today = new Date()
             try {
                 const user = new User(
                     {firstname: args.firstname,
@@ -118,7 +131,16 @@ const resolvers: IResolvers = {
                         username: args.username, 
                         password: args.password, 
                         entries:[],
-                        gender: args.gender
+                        gender: args.gender,
+                        objective: args.objective,
+                        effort: args.effort,
+                        height: args.height,
+                        weights: [
+                            {
+                                date: today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate(),
+                                weight: args.weight
+                            }
+                        ]
                     })
                 const response = await user.save()
                 return response
