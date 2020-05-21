@@ -3,7 +3,7 @@ import gql from 'graphql-tag'
 import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
 import config from './utils/config'
-import User, { IUser } from './models/user'
+import User, { IUser, IUserPopulated } from './models/user'
 import Entry from './models/entry'
 import { Token } from './types'
 import bcrypt from 'bcrypt'
@@ -85,7 +85,7 @@ const typeDefs = gql`
     }
 `
 
-const resolvers: IResolvers = {
+const resolvers: IResolvers = { 
     Query: {
         allUsers: async () =>  {
             return await User.find({})
@@ -93,14 +93,14 @@ const resolvers: IResolvers = {
         userCount: () => User.collection.countDocuments(),
         myUser: () => async (_root: unknown, 
             _args: unknown, 
-            {currentUser}: {currentUser: IUser}) => {
-            if (!currentUser){
+            {currentUser}: {currentUser: IUser}) => { //test, maybe need different userType
+            if (!currentUser){ 
                 throw new AuthenticationError(
                     'Please login to add entries'
                 )
             }
             else{
-                return await User.find({'id': currentUser.id})
+                return User.findMyEntries(currentUser.id)
             }
         },
         myEntries: async (_root, _args, {currentUser}: {currentUser: IUser}) => {
@@ -110,7 +110,7 @@ const resolvers: IResolvers = {
                 )
             }
             else{
-                const testUser = await User.findMyEntries( currentUser.id)
+                const testUser: IUserPopulated = await User.findMyEntries( currentUser.id)
                 return testUser.entries
             }
         } 
