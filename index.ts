@@ -22,27 +22,9 @@ mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true })
 
 
 const typeDefs = gql`
-  type Token {
-      value: String!
-  }
-
-    type User {
-        firstname: String!
-        lastname: String!
-        username: String!
-        entries: [String]!
-        gender: String!
-        height: Float!
-        weights: [WeightEntry]!
-        effort: Float!
-        objective: Float!
+    type Token {
+        value: String!
     }
-
-    type WeightEntry{
-        date: Float!
-        weight: Float!
-    }
-
     type Entry {
         description: String!
         date: Float!
@@ -50,9 +32,30 @@ const typeDefs = gql`
         calories: Int!
     }
 
+    type WeightEntry{
+        date: Float!
+        weight: Float!
+    }
+
+    type User {
+        firstname: String!
+        lastname: String!
+        username: String!
+        entries: [Entry]!
+        gender: String!
+        height: Float!
+        weights: [WeightEntry]!
+        effort: Float!
+        objective: Float!
+    }
+
+
+
+
+
     type Query {
         allUsers: [User!]!
-        findUser: User!
+        myUser: User!
         userCount: Int!
         myEntries: [Entry]!
     }
@@ -88,6 +91,18 @@ const resolvers: IResolvers = {
             return await User.find({})
         },
         userCount: () => User.collection.countDocuments(),
+        myUser: () => async (_root: unknown, 
+            _args: unknown, 
+            {currentUser}: {currentUser: IUser}) => {
+            if (!currentUser){
+                throw new AuthenticationError(
+                    'Please login to add entries'
+                )
+            }
+            else{
+                return await User.find({'id': currentUser.id})
+            }
+        },
         myEntries: async (_root, _args, {currentUser}: {currentUser: IUser}) => {
             if (!currentUser){
                 throw new AuthenticationError(
