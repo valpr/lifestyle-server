@@ -91,16 +91,17 @@ const resolvers: IResolvers = {
             return await User.find({})
         },
         userCount: () => User.collection.countDocuments(),
-        myUser: () => async (_root: unknown, 
-            _args: unknown, 
+        myUser: async (_root, _args, 
             {currentUser}: {currentUser: IUser}) => { //test, maybe need different userType
-            if (!currentUser){ 
+            console.log(currentUser)
+                if (!currentUser){ 
                 throw new AuthenticationError(
                     'Please login to add entries'
                 )
             }
             else{
-                return User.findMyEntries(currentUser.id)
+                const response: IUserPopulated =  await User.findMyEntries(currentUser.id)
+                return response          
             }
         },
         myEntries: async (_root, _args, {currentUser}: {currentUser: IUser}) => {
